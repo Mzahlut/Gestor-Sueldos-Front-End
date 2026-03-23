@@ -13,8 +13,8 @@ export interface Cliente {
 export interface Factura {
   id: number;
   cliente: Cliente;
-  fecha: string;   // podés usar Date si preferís
-  total: number;
+  fecha: string;  
+  montoTotal: number;
   items: ItemFactura[];
 }
 

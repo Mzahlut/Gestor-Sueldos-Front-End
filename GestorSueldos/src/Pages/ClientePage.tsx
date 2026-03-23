@@ -16,12 +16,25 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import type { Cliente } from "../Types/types";
+import AltaClienteDialog from "../Components/AltaClienteDialog";
+import BajaClienteDialog from "../Components/BajaClienteDialog";
+import { ModificarClienteDialog } from "../Components/ModificarClienteDialog";
 
 const ClientesPage = () => {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [openFacturas, setOpenFacturas] = useState(false);
-  const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
+  const [openAlta, setOpenAlta] = useState(false);
+  const [openBaja, setOpenBaja] = useState(false);
+  const [openModificar, setOpenModificar] = useState(false);
+  const [clienteAModificar, setClienteAModificar] = useState<Cliente | null>(
+    null,
+  );
 
+  const [clienteAEliminar, setClienteAEliminar] = useState<Cliente | null>(
+    null,
+  );
+  const [clienteSeleccionado, setClienteSeleccionado] =
+    useState<Cliente | null>(null);
 
   useEffect(() => {
     axios
@@ -30,20 +43,31 @@ const ClientesPage = () => {
       .catch((err) => console.error("Error al cargar clientes:", err));
   }, []);
 
-  console.log("Clientes cargados:", clientes); // ✅ log para verificar datos  
+  const handleClienteAgregado = (cliente: Cliente) => {
+    setClientes([...clientes, cliente]);
+  };
 
-  
+  const handleClienteEliminado = (id: number) => {
+    setClientes(clientes.filter((c) => c.id !== id));
+  };
+
+   const handleClienteModificado = (clienteActualizado: Cliente) => {
+  setClientes(clientes.map(c => c.id === clienteActualizado.id ? clienteActualizado : c));
+};
+
+
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-8">
       <Button
         onClick={() => window.history.back()}
         variant="contained"
         color="primary"
-        margin="normal"
         className="mb-4"
       >
         Ir Atras
       </Button>
+
       <Typography variant="h4" className="mb-6 font-bold text-gray-100">
         Gestión de Clientes
       </Typography>
@@ -52,7 +76,6 @@ const ClientesPage = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell className="text-gray-100">ID</TableCell>
               <TableCell className="text-gray-100">CUIT</TableCell>
               <TableCell className="text-gray-100">Dirección</TableCell>
               <TableCell className="text-gray-100">Email</TableCell>
@@ -64,7 +87,6 @@ const ClientesPage = () => {
           <TableBody>
             {clientes.map((cliente) => (
               <TableRow key={cliente.id}>
-                <TableCell>{cliente.id}</TableCell>
                 <TableCell>{cliente.cuit}</TableCell>
                 <TableCell>{cliente.direccion}</TableCell>
                 <TableCell>{cliente.email}</TableCell>
@@ -82,57 +104,102 @@ const ClientesPage = () => {
                     Ver Facturas
                   </Button>
                 </TableCell>
+                <TableCell>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => {
+                      setClienteAEliminar(cliente);
+                      setOpenBaja(true);
+                    }}
+                  >
+                    Dar de Baja
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={() => {
+                      setClienteAModificar(cliente);
+                      setOpenModificar(true);
+                    }}
+                  >
+                    Modificar
+                  </Button>
+
+                </TableCell>
               </TableRow>
-            
             ))}
           </TableBody>
         </Table>
       </TableContainer>
 
-    
       <div className="mt-6 flex gap-4">
-        <Button variant="contained" color="primary">
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => setOpenAlta(true)}
+        >
           Dar de Alta
         </Button>
-        <Button variant="outlined" color="error">
-          Dar de Baja
-        </Button>
+
         <Button variant="outlined" color="secondary">
           Modificar
         </Button>
       </div>
-      <Dialog open={openFacturas} onClose={() => setOpenFacturas(false)} fullWidth>
-  <DialogTitle>Facturas de {clienteSeleccionado?.nombre}</DialogTitle>
-  <DialogContent>
-    {clienteSeleccionado?.facturas && clienteSeleccionado.facturas.length > 0 ? (
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>ID</TableCell>
-            <TableCell>Fecha</TableCell>
-            <TableCell>Monto Total</TableCell>
-            
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {clienteSeleccionado.facturas.map(f => (
-            <TableRow key={f.id}>
-              <TableCell>{f.id}</TableCell>
-              <TableCell>{f.fecha}</TableCell>
-              <TableCell>{f.total}</TableCell>
-              
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    ) : (
-      <Typography>No hay facturas registradas</Typography>
-    )}
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setOpenFacturas(false)}>Cerrar</Button>
-  </DialogActions>
-</Dialog>
+      <AltaClienteDialog
+        open={openAlta}
+        onClose={() => setOpenAlta(false)}
+        onClienteAgregado={handleClienteAgregado}
+      />
+      <BajaClienteDialog
+        open={openBaja}
+        onClose={() => setOpenBaja(false)}
+        cliente={clienteAEliminar} // 👈 pasamos el cliente seleccionado
+        onClienteEliminado={handleClienteEliminado}
+      />
+
+      <ModificarClienteDialog
+        open={openModificar}
+        onClose={() => setOpenModificar(false)}
+        cliente={clienteAModificar}
+        onClienteModificado={handleClienteModificado}
+      />
+
+      <Dialog
+        open={openFacturas}
+        onClose={() => setOpenFacturas(false)}
+        fullWidth
+      >
+        <DialogTitle>Facturas de {clienteSeleccionado?.nombre}</DialogTitle>
+        <DialogContent>
+          {clienteSeleccionado?.facturas &&
+          clienteSeleccionado.facturas.length > 0 ? (
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Fecha</TableCell>
+                  <TableCell>Monto Total</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {clienteSeleccionado.facturas.map((f) => (
+                  <TableRow key={f.id}>
+                    <TableCell>{f.id}</TableCell>
+                    <TableCell>{f.fecha}</TableCell>
+                    <TableCell>{f.montoTotal}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <Typography>No hay facturas registradas</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenFacturas(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };
